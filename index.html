@@ -29,23 +29,16 @@
                 <div class="card card-input">
                     <div class="form-group">
                         <label for="username" class="label">NOMBRE DE USUARIO DE INSTAGRAM</label>
-                        <input 
-                            type="text" 
-                            id="username" 
-                            class="input" 
-                            placeholder="@usuario o usuario"
+                        <input
+                            type="text"
+                            id="username"
+                            class="input"
+                            placeholder="@usuario"
                             autocomplete="off"
                         >
-                        <p class="help-text">Introduce el @ de cualquier perfil público de Instagram</p>
+                        <p class="help-text">Introduce el @ de cualquier perfil público</p>
                     </div>
                     <button id="checkBtn" class="btn btn-primary">COMPROBAR</button>
-                </div>
-
-                <div class="info-box">
-                    <p class="info-text">
-                        <strong>Nota:</strong> Instagram bloquea requests directos desde navegadores por seguridad.
-                        Esta herramienta intentará obtener los datos, pero puede requerir métodos alternativos.
-                    </p>
                 </div>
             </div>
 
@@ -53,11 +46,15 @@
             <div id="loaderScreen" class="screen hidden">
                 <div class="loader-container">
                     <div class="loader">
-                        <div class="loader-spinner"></div>
+                        <div class="loader-block loader-block-1"></div>
+                        <div class="loader-block loader-block-2"></div>
+                        <div class="loader-block loader-block-3"></div>
+                        <div class="loader-block loader-block-4"></div>
                     </div>
                     <div class="loader-text">
-                        <p class="loader-title">CARGANDO...</p>
+                        <p class="loader-title" id="loaderTitle">CONECTANDO...</p>
                         <p class="loader-subtitle">Obteniendo datos de <span id="loadingUsername"></span></p>
+                        <p class="loader-status" id="loaderStatus"></p>
                     </div>
                 </div>
             </div>
@@ -113,11 +110,9 @@
 
     <!-- Footer -->
     <footer class="footer">
-        <div class="container">
-            <a href="https://meowrhino.studio" target="_blank" rel="noopener noreferrer" class="footer-link">
-                meowrhino.studio
-            </a>
-        </div>
+        <a href="https://meowrhino.studio" target="_blank" rel="noopener noreferrer" class="footer-link">
+            meowrhino.studio
+        </a>
     </footer>
 
     <script src="script.js"></script>
