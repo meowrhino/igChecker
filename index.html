@@ -1,0 +1,125 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Instagram List Comparator | meowrhino.studio</title>
+    <meta name="description" content="Compara listas de seguidores y seguidos de Instagram para identificar mutuos">
+    
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
+    
+    <link rel="stylesheet" href="styles.css">
+</head>
+<body>
+    <!-- Header -->
+    <header class="header">
+        <div class="container">
+            <h1 class="header-title">INSTAGRAM LIST COMPARATOR</h1>
+        </div>
+    </header>
+
+    <!-- Main Content -->
+    <main class="main">
+        <div class="container">
+            <!-- Input Screen -->
+            <div id="inputScreen" class="screen">
+                <div class="card card-input">
+                    <div class="form-group">
+                        <label for="username" class="label">NOMBRE DE USUARIO DE INSTAGRAM</label>
+                        <input 
+                            type="text" 
+                            id="username" 
+                            class="input" 
+                            placeholder="@usuario o usuario"
+                            autocomplete="off"
+                        >
+                        <p class="help-text">Introduce el @ de cualquier perfil público de Instagram</p>
+                    </div>
+                    <button id="checkBtn" class="btn btn-primary">COMPROBAR</button>
+                </div>
+
+                <div class="info-box">
+                    <p class="info-text">
+                        <strong>Nota:</strong> Instagram bloquea requests directos desde navegadores por seguridad.
+                        Esta herramienta intentará obtener los datos, pero puede requerir métodos alternativos.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Loader Screen -->
+            <div id="loaderScreen" class="screen hidden">
+                <div class="loader-container">
+                    <div class="loader">
+                        <div class="loader-spinner"></div>
+                    </div>
+                    <div class="loader-text">
+                        <p class="loader-title">CARGANDO...</p>
+                        <p class="loader-subtitle">Obteniendo datos de <span id="loadingUsername"></span></p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Results Screen -->
+            <div id="resultsScreen" class="screen hidden">
+                <div class="results-header">
+                    <h2 class="results-title">@<span id="resultUsername"></span></h2>
+                    <div class="results-actions">
+                        <button id="exportBtn" class="btn btn-outline">
+                            <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+                                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                                <polyline points="7 10 12 15 17 10"></polyline>
+                                <line x1="12" y1="15" x2="12" y2="3"></line>
+                            </svg>
+                            EXPORTAR JSON
+                        </button>
+                        <button id="resetBtn" class="btn btn-outline">NUEVA BÚSQUEDA</button>
+                    </div>
+                </div>
+
+                <div class="results-grid">
+                    <!-- Mutuos -->
+                    <div class="card card-result">
+                        <div class="card-header">
+                            <h3 class="card-title">MUTUOS</h3>
+                            <span class="card-count card-count-accent" id="mutualsCount">0</span>
+                        </div>
+                        <div class="card-list" id="mutualsList"></div>
+                    </div>
+
+                    <!-- Solo te siguen -->
+                    <div class="card card-result">
+                        <div class="card-header">
+                            <h3 class="card-title">SOLO TE SIGUEN</h3>
+                            <span class="card-count card-count-blue" id="followersCount">0</span>
+                        </div>
+                        <div class="card-list" id="followersList"></div>
+                    </div>
+
+                    <!-- Solo sigues tú -->
+                    <div class="card card-result">
+                        <div class="card-header">
+                            <h3 class="card-title">SOLO SIGUES TÚ</h3>
+                            <span class="card-count card-count-orange" id="followingCount">0</span>
+                        </div>
+                        <div class="card-list" id="followingList"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </main>
+
+    <!-- Footer -->
+    <footer class="footer">
+        <div class="container">
+            <a href="https://meowrhino.studio" target="_blank" rel="noopener noreferrer" class="footer-link">
+                meowrhino.studio
+            </a>
+        </div>
+    </footer>
+
+    <script src="script.js"></script>
+</body>
+</html>
