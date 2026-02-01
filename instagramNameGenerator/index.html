@@ -1,0 +1,440 @@
+<!DOCTYPE html>
+<html lang="es">
+
+<head>
+  <meta charset="UTF-8">
+  <title>IG @ generator</title>
+  <style>
+    /* ---------------------- */
+    /*        DARK MODE       */
+    /* ---------------------- */
+    html,
+    body {
+      margin: 0;
+      padding: 0;
+      height: 100%;
+    }
+
+    body {
+      background-color: #333;
+      background-image: radial-gradient(circle, rgba(255, 255, 255, 0.1) 1px, transparent 1px);
+      background-size: 10px 10px;
+      background-attachment: fixed;
+      font-family: Arial, sans-serif;
+      color: #f8ecd8;
+      /* Texto claro sobre fondo oscuro */
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: flex-start;
+      min-height: 100vh;
+      box-sizing: border-box;
+    }
+
+    h1 {
+      margin-top: 40px;
+      text-align: center;
+      font-weight: normal;
+    }
+
+    /* ---------------------- */
+    /*     CONTENEDOR         */
+    /* ---------------------- */
+    .container {
+      width: 90%;
+      max-width: 600px;
+      margin: 20px auto;
+      text-align: center;
+    }
+
+    .input-row {
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: center;
+      gap: 15px;
+      margin-bottom: 15px;
+    }
+
+    .input-row label {
+      font-weight: bold;
+      padding: 8px 0px;
+    }
+
+    .input-row input[type="text"],
+    .input-row input[type="number"],
+    .input-row select {
+      padding: 8px;
+      border-radius: 1px;
+      background-color: #444;
+      color: #f8ecd8;
+    }
+
+    .input-row input[type="number"] {
+      width: 80px;
+    }
+
+    /* ---------------------- */
+    /*  BOTONES DE ACCIÓN     */
+    /* ---------------------- */
+    .btn-generate,
+    .btn-ruleta,
+    .btn-vanilla {
+      background-color: burlywood;
+      border: none;
+      color: #333;
+      padding: 10px 20px;
+      border-radius: 1px;
+      cursor: pointer;
+      font-size: 1em;
+      margin-top: 2,5px;
+      margin-bottom: 2,5px;
+      transition: background-color 0.2s ease;
+    }
+
+    .btn-generate:hover,
+    .btn-ruleta:hover,
+    .btn-vanilla:hover {
+      background-color: #e0b080;
+    }
+
+    /* ---------------------- */
+    /*   LISTA DE OPCIONES    */
+    /* ---------------------- */
+    .options-list {
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      margin-top: 10px;
+      margin-bottom: 30px;
+    }
+
+    .option-item {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      background-color: #444;
+      padding: 8px 12px;
+      border-radius: 4px;
+    }
+
+    .option-text {
+      font-family: monospace;
+      font-size: 14px;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+      max-width: 70%;
+    }
+
+    .copy-btn {
+      background-color: burlywood;
+      border: none;
+      color: #333;
+      padding: 6px 12px;
+      border-radius: 4px;
+      cursor: pointer;
+      font-size: 0.9em;
+      transition: background-color 0.2s ease;
+    }
+
+    .copy-btn:hover {
+      background-color: #e0b080;
+    }
+
+    /* ---------------------- */
+    /*   MENSAJE DE ESTADO    */
+    /* ---------------------- */
+    .status-message {
+      margin-top: 10px;
+      font-size: 0.95em;
+      color: #f8ecd8;
+    }
+  </style>
+</head>
+
+<body>
+  <h1>IG @ generator</h1>
+
+  <div class="container">
+    <!-- FILA DE INPUTS: Nombre base y cantidad de resultados -->
+    <div class="input-row">
+      <label for="baseName">Nombre base:</label>
+      <input type="text" id="baseName" placeholder="Ej: manu" />
+
+      <label for="numOptions">Opciones:</label>
+      <input type="number" id="numOptions" min="1" max="100" value="5" />
+    </div>
+
+    <!-- FILA DE SELECTORES DE CARACTERES DE RELLENO -->
+    <div class="input-row">
+      <!--<label for="fill1"></label>-->
+      <select id="fill1"></select>
+
+      <!--<label for="fill2"></label>-->
+      <select id="fill2"></select>
+
+      <!--<label for="fill3"></label>-->
+      <select id="fill3"></select>
+
+      <!-- Botón "Ruleta" -->
+      <button class="btn-ruleta" onclick="ruleta()">Ruleta</button>
+
+      <!-- Botón "Vanilla": pone los 3 select en "_" -->
+      <button class="btn-vanilla" onclick="vanillaMode()">Vanilla</button>
+
+      <!-- BOTÓN GENERAR -->
+      <button class="btn-generate" onclick="generateOptions()">Generar</button>
+    </div>
+
+    <!-- LISTADO DE OPCIONES -->
+    <div class="options-list" id="optionsList"></div>
+
+    <!-- MENSAJE DE ESTADO (cuántas generadas, si se ha llegado al máximo, etc.) -->
+    <div class="status-message" id="statusMsg"></div>
+  </div>
+
+  <script>
+    /* 
+      Array con TODOS los caracteres permitidos en IG:
+      - Letras minúsculas y mayúsculas (a-z, A-Z)
+      - Números (0-9)
+      - Punto (.)  --> con restricciones de posición
+      - Guion bajo(_)
+        */
+    const instagramUsernameChars = [
+      ...'abcdefghijklmnopqrstuvwxyz',  // minúsculas
+      ...'ABCDEFGHIJKLMNOPQRSTUVWXYZ',  // mayúsculas
+      ...'0123456789',                  // dígitos
+      '.',                              // punto
+      '_'                               // subrayado
+    ];
+
+    /* 
+      Usaremos este array para los selectores:
+      Se generarán secuencias de estos "rellenos".
+      Pero sólo serán IG-estrictos si no estamos en "vanilla" 
+      (es decir, si no son todos '_').
+    */
+    const nameCharLimit = 30;
+    const fillSelectsCount = 3; // fill1, fill2, fill3
+
+    // Al cargar la página, rellenamos los <select> con instagramUsernameChars
+    window.addEventListener('DOMContentLoaded', () => {
+      const fill1 = document.getElementById('fill1');
+      const fill2 = document.getElementById('fill2');
+      const fill3 = document.getElementById('fill3');
+
+      // Para cada <select>, metemos las opciones
+      [fill1, fill2, fill3].forEach((sel) => {
+        instagramUsernameChars.forEach((char) => {
+          const opt = document.createElement('option');
+          opt.value = char;
+          opt.textContent = char;
+          sel.appendChild(opt);
+        });
+        // Por defecto, elegimos '_'
+        sel.value = '_';
+      });
+    });
+
+    // Genera un número aleatorio entre 0 y 'max' (ambos incluidos)
+    function randomNumber(max) {
+      return Math.floor(Math.random() * (max + 1));
+    }
+
+    // Elige 3 caracteres aleatorios del array principal y los asigna
+    function ruleta() {
+      const fill1 = document.getElementById('fill1');
+      const fill2 = document.getElementById('fill2');
+      const fill3 = document.getElementById('fill3');
+
+      fill1.value = instagramUsernameChars[randomNumber(instagramUsernameChars.length - 1)];
+      fill2.value = instagramUsernameChars[randomNumber(instagramUsernameChars.length - 1)];
+      fill3.value = instagramUsernameChars[randomNumber(instagramUsernameChars.length - 1)];
+    }
+
+    // Botón "Vanilla": pone los 3 select en "_"
+    function vanillaMode() {
+      document.getElementById('fill1').value = '_';
+      document.getElementById('fill2').value = '_';
+      document.getElementById('fill3').value = '_';
+    }
+
+    // Devuelve true si los 3 selectores son '_'
+    function isVanilla(fill1, fill2, fill3) {
+      return (fill1 === '_' && fill2 === '_' && fill3 === '_');
+    }
+
+    /**
+     * buildFillString:
+     * Devuelve un string de longitud 'count', donde cada "carácter de relleno"
+     * se elige aleatoriamente entre fillChars (array con 3 elementos).
+     */
+    function buildFillString(count, fillChars) {
+      let result = '';
+      for (let i = 0; i < count; i++) {
+        const pick = fillChars[randomNumber(fillChars.length - 1)];
+        result += pick;
+      }
+      return result;
+    }
+
+    /**
+     * Genera un string de longitud 30,
+     * añadiendo secuencias aleatorias tomadas de fillChars
+     * hasta completarlo. 
+     * Reemplaza espacios en 'base' por '_'.
+     */
+    function generatePoeticString(base, fillChars) {
+      // Reemplazamos espacios en el nombre base
+      base = base.replace(/\s+/g, '_');
+
+      let name = base;
+      while (name.length < nameCharLimit) {
+        const spacesLeft = nameCharLimit - name.length;
+        const howMany = randomNumber(spacesLeft);
+
+        const fillString = buildFillString(howMany, fillChars);
+
+        // Escogemos índice aleatorio para insertar
+        const randomIndex = Math.floor(Math.random() * (name.length + 1));
+        // Insertamos
+        name = name.slice(0, randomIndex) + fillString + name.slice(randomIndex);
+      }
+      // Si nos pasamos, recortamos
+      if (name.length > nameCharLimit) {
+        name = name.slice(0, nameCharLimit);
+      }
+      return name;
+    }
+
+    /**
+     * Valida reglas de Instagram para username, 
+     * pero sólo si NO estamos en vanilla (o sea, hay puntos).
+     * Reglas a cumplir (no si esVanilla = true):
+     *  1) No puede empezar con '.'
+     *  2) No puede terminar con '.'
+     *  3) No puede contener '..'
+     */
+    function validateIGUsername(str, skipRules) {
+      // Si skipRules = true (modo vanilla), no aplicamos restricciones
+      if (skipRules) return true;
+
+      // 1) No empieza con punto
+      if (str[0] === '.') return false;
+      // 2) No acaba con punto
+      if (str[str.length - 1] === '.') return false;
+      // 3) No consecutivos
+      if (str.includes('..')) return false;
+
+      return true;
+    }
+
+    // Copia el texto al portapapeles
+    function copyToClipboard(text) {
+      navigator.clipboard.writeText(text)
+        .then(() => {
+          alert('¡Copiado al portapapeles!');
+        })
+        .catch(() => {
+          alert('Error al copiar. Intenta de nuevo.');
+        });
+    }
+
+    /**
+     * Genera 'quantity' opciones únicas.
+     * Descarta (o reintenta) si:
+     *   - El nombre ya se generó antes
+     *   - No cumple las reglas IG (si no estamos en vanilla)
+     * Hasta lograr la cantidad pedida o llegar a 'maxAttempts'.
+     */
+    function generateUniqueOptions(baseName, quantity, fillChars, skipIGRules) {
+      const uniqueSet = new Set();
+      const results = [];
+
+      let attempts = 0;
+      const maxAttempts = quantity * 100;
+      // Máx. 50 intentos por cada opción que pedimos
+
+      while (results.length < quantity && attempts < maxAttempts) {
+        const candidate = generatePoeticString(baseName, fillChars);
+
+        // Validamos IG (sólo si skipIGRules = false)
+        const isValid = validateIGUsername(candidate, skipIGRules);
+
+        if (isValid && !uniqueSet.has(candidate)) {
+          uniqueSet.add(candidate);
+          results.push(candidate);
+        }
+        attempts++;
+      }
+      return {
+        list: results,
+        exhausted: (results.length < quantity && attempts >= maxAttempts),
+        attempts
+      };
+    }
+
+    // Genera las opciones y las inyecta en el DOM
+    function generateOptions() {
+      const baseName = document.getElementById('baseName').value.trim() || 'manu';
+      const quantity = parseInt(document.getElementById('numOptions').value, 10) || 5;
+      const optionsContainer = document.getElementById('optionsList');
+      const statusDiv = document.getElementById('statusMsg');
+
+      // Obtenemos los 3 caracteres de relleno elegidos
+      const f1 = document.getElementById('fill1').value;
+      const f2 = document.getElementById('fill2').value;
+      const f3 = document.getElementById('fill3').value;
+
+      // Limpiamos la lista anterior
+      optionsContainer.innerHTML = '';
+      statusDiv.textContent = '';
+
+      const skipIGRules = isVanilla(f1, f2, f3);
+      // Generamos 'quantity' opciones únicas
+      const { list, exhausted, attempts } = generateUniqueOptions(
+        baseName,
+        quantity,
+        [f1, f2, f3],
+        skipIGRules
+      );
+
+      // Pintamos en pantalla
+      list.forEach(result => {
+        const optionItem = document.createElement('div');
+        optionItem.className = 'option-item';
+
+        const optionText = document.createElement('span');
+        optionText.className = 'option-text';
+        optionText.textContent = result;
+
+        const copyButton = document.createElement('button');
+        copyButton.className = 'copy-btn';
+        copyButton.textContent = 'Copiar';
+        copyButton.addEventListener('click', () => {
+          copyToClipboard(result);
+        });
+
+        optionItem.appendChild(optionText);
+        optionItem.appendChild(copyButton);
+        optionsContainer.appendChild(optionItem);
+      });
+
+      // Mensaje de estado
+      const generatedCount = list.length;
+      if (exhausted) {
+        statusDiv.textContent =
+          `Se han generado ${generatedCount} de ${quantity} opciones. 
+           Ya no hay más combinaciones únicas posibles (o se agotaron los intentos).
+           Intentos totales: ${attempts}.`;
+      } else {
+        statusDiv.textContent =
+          `Se han generado ${generatedCount} de ${quantity} opciones. 
+           ¡Listo! Intentos totales: ${attempts}.`;
+      }
+    }
+  </script>
+</body>
+
+</html>

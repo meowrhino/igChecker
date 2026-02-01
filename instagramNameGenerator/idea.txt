@@ -1,0 +1,88 @@
+        creadoror de @. con tu nombre/palabra clave
+        con espacios entre letras
+        coje el string
+        calcula su lenght
+        (if nombre compuesto - mal solo nombres simplew, seria verificar si el string tiene caracteres vacios (" ")
+        
+        podria dar uan opcion de proceed anyway que activaria una runxion que recibe ese string le quira los espacios con crop y lo devuelve
+        
+        y luego prueba a multiplicar
+        en plan 
+        resultado = string de antes.lenght
+        y miras como calculas el maximo de caracters de insta y lo divides entre el string lenght y calculas cuantos espacios totales se pueden rellenar
+        entonces le haces un ! a ese reeultado
+        - [ ] o sea la operacion matmatixa
+        - [ ] que calculas el ratio mas divertido de numeros que lo suman
+        p. ej suponiwndo que el mazimo del @ son 20 caracteres
+        introduzco "manu"
+        manu.lenght = 4
+        20-4
+        (porque son los obligatorios en el resultado)
+        
+        y ahora un random numero natural entre 1 y ese numero
+        y lo guarda
+        
+        si ese nunero es, por ejemploe n ese ejemplo, sale 16
+        que seria el maximo
+        seria solo 1 unifad de resultado
+        entonce shabria solo una _____
+        y seria m_____________anu
+        
+        y ya
+        
+        si el resultado es por ejemplo 13
+        y luego 3
+        serian 2 unidades de resultados 
+        y te haria p.ej (lo haria random separando el string en sus cuarro strings
+        y hace un random si si o si no
+        si sale que si
+        pues añade 13 espacios en blanco entre la m y la a y 
+        
+        y recompone el string asi:
+        m___________a n u
+        
+        y ahora sale en el random boolean para el siguiente que no
+        entonces recompone el string asi
+        m___________an u
+        
+        y ahora al 3o dice que si
+        pues añade ese 2o numero de _ entee la n y la u
+        quedabdo asi
+        m___________an___u
+        
+        si al final por algun motivo el resultado de toda eara paja no es el maximod eninsta
+        
+        (if number(stringresultante) !=== maximo.deinsta
+        
+        si no lo es, resra ese maximo de insta al stringresulranre.lenght
+        
+        y ese resulrado son 3
+        y añade 3 _ al final
+        
+        quedando asi: m________an___u___
+        y ahora si que deberia pasar que
+        (number(stringresultante) === maximodeinsta"
+        
+        y si no, tienes un problema
+        
+        
+        
+        
+        
+        ----- 
+        tambien puede see maa facil
+        si es cera
+        y el amximo son 20
+        sera 16 espacios en blanco
+        
+        wntonces un numero random
+        entre 0 y 16
+        si sale cero, salta, 
+        si sale 16 hace
+        c_________era
+        porque 16 +cera.lenght === maximo
+        
+        çero me tusta mas el
+        boolean creo
+        es mas diertido
+        habea mas variedad

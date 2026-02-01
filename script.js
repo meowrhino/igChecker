@@ -1,162 +1,142 @@
 // ============================================
-// CONFIGURACIÓN
-// ============================================
-const PROXY_URL = 'https://igchecker.onrender.com';
-
-// ============================================
-// ESTADO DE LA APLICACIÓN
+// ESTADO
 // ============================================
 let currentData = null;
+let followersData = null;
+let followingData = null;
 
 // ============================================
 // ELEMENTOS DEL DOM
 // ============================================
 const elements = {
-    // Screens
     inputScreen: document.getElementById('inputScreen'),
     loaderScreen: document.getElementById('loaderScreen'),
     resultsScreen: document.getElementById('resultsScreen'),
 
-    // Input
-    usernameInput: document.getElementById('username'),
+    followersFile: document.getElementById('followersFile'),
+    followingFile: document.getElementById('followingFile'),
+    followersZone: document.getElementById('followersZone'),
+    followingZone: document.getElementById('followingZone'),
+    followersFileName: document.getElementById('followersFileName'),
+    followingFileName: document.getElementById('followingFileName'),
     checkBtn: document.getElementById('checkBtn'),
 
-    // Loader
-    loadingUsername: document.getElementById('loadingUsername'),
-    loaderTitle: document.getElementById('loaderTitle'),
-    loaderStatus: document.getElementById('loaderStatus'),
-
-    // Results
-    resultUsername: document.getElementById('resultUsername'),
+    resultUsername: null,
     exportBtn: document.getElementById('exportBtn'),
     resetBtn: document.getElementById('resetBtn'),
 
-    // Lists
     mutualsList: document.getElementById('mutualsList'),
     followersList: document.getElementById('followersList'),
     followingList: document.getElementById('followingList'),
-
-    // Counts
     mutualsCount: document.getElementById('mutualsCount'),
     followersCount: document.getElementById('followersCount'),
     followingCount: document.getElementById('followingCount'),
+
+    // Name generator
+    baseName: document.getElementById('baseName'),
+    numOptions: document.getElementById('numOptions'),
+    generateBtn: document.getElementById('generateBtn'),
+    generatorResults: document.getElementById('generatorResults'),
+    generatorStatus: document.getElementById('generatorStatus'),
 };
 
 // ============================================
-// FUNCIONES DE NAVEGACIÓN
+// NAVEGACION
 // ============================================
 function showScreen(screenName) {
     elements.inputScreen.classList.add('hidden');
     elements.loaderScreen.classList.add('hidden');
     elements.resultsScreen.classList.add('hidden');
 
-    if (screenName === 'input') {
-        elements.inputScreen.classList.remove('hidden');
-    } else if (screenName === 'loader') {
-        elements.loaderScreen.classList.remove('hidden');
-    } else if (screenName === 'results') {
-        elements.resultsScreen.classList.remove('hidden');
+    if (screenName === 'input') elements.inputScreen.classList.remove('hidden');
+    else if (screenName === 'loader') elements.loaderScreen.classList.remove('hidden');
+    else if (screenName === 'results') elements.resultsScreen.classList.remove('hidden');
+}
+
+// ============================================
+// PARSEO DE JSON DE INSTAGRAM
+// ============================================
+function extractUsernames(jsonData) {
+    let entries = [];
+
+    // Format 1: wrapped with top-level key
+    if (jsonData.relationships_followers) {
+        entries = jsonData.relationships_followers;
+    } else if (jsonData.relationships_following) {
+        entries = jsonData.relationships_following;
     }
-}
-
-// ============================================
-// LOADER STATUS
-// ============================================
-let statusInterval = null;
-
-function startLoaderMessages() {
-    const messages = [
-        'Despertando servidor...',
-        'Conectando con Instagram...',
-        'Esto puede tardar unos segundos...',
-        'El servidor gratuito tarda en arrancar...',
-        'Casi listo...',
-        'Obteniendo perfil...',
-        'Un momento más...',
-    ];
-    let index = 0;
-
-    elements.loaderTitle.textContent = 'CONECTANDO...';
-    elements.loaderStatus.textContent = messages[0];
-
-    statusInterval = setInterval(() => {
-        index++;
-        if (index < messages.length) {
-            elements.loaderStatus.textContent = messages[index];
-        }
-    }, 4000);
-}
-
-function updateLoaderStatus(title, status) {
-    elements.loaderTitle.textContent = title;
-    if (status) elements.loaderStatus.textContent = status;
-}
-
-function stopLoaderMessages() {
-    if (statusInterval) {
-        clearInterval(statusInterval);
-        statusInterval = null;
+    // Format 2: plain array
+    else if (Array.isArray(jsonData)) {
+        entries = jsonData;
     }
+
+    return entries
+        .map(entry => {
+            if (entry.string_list_data && entry.string_list_data.length > 0) {
+                return entry.string_list_data[0].value;
+            }
+            return null;
+        })
+        .filter(Boolean);
 }
 
-// ============================================
-// FUNCIONES DE INSTAGRAM API (VIA PROXY)
-// ============================================
-async function fetchInstagramData(username) {
-    const cleanUsername = username.replace('@', '').trim().toLowerCase();
-
-    try {
-        // Step 1: Get profile
-        updateLoaderStatus('BUSCANDO PERFIL...', 'Obteniendo información de @' + cleanUsername);
-        const profileResponse = await fetch(`${PROXY_URL}/api/profile/${cleanUsername}`);
-
-        if (!profileResponse.ok) {
-            const errData = await profileResponse.json().catch(() => ({}));
-            if (profileResponse.status === 404) {
-                throw new Error('Usuario no encontrado. Verifica que el @ sea correcto.');
+function readJSONFile(file) {
+    return new Promise((resolve, reject) => {
+        const reader = new FileReader();
+        reader.onload = (e) => {
+            try {
+                const data = JSON.parse(e.target.result);
+                resolve(data);
+            } catch {
+                reject(new Error('El archivo no es un JSON valido'));
             }
-            if (profileResponse.status === 429) {
-                throw new Error('Demasiadas peticiones. Espera un momento e intenta de nuevo.');
-            }
-            throw new Error(errData.error || 'Error al obtener el perfil');
-        }
-
-        const profile = await profileResponse.json();
-
-        if (profile.is_private) {
-            throw new Error('Este perfil es privado. Solo se pueden consultar perfiles públicos.');
-        }
-
-        // Step 2: Get followers and following in parallel
-        updateLoaderStatus('OBTENIENDO LISTAS...', `Seguidores: ${profile.follower_count || '?'} · Seguidos: ${profile.following_count || '?'}`);
-
-        const [followersRes, followingRes] = await Promise.all([
-            fetch(`${PROXY_URL}/api/followers/${profile.id}`),
-            fetch(`${PROXY_URL}/api/following/${profile.id}`),
-        ]);
-
-        if (!followersRes.ok || !followingRes.ok) {
-            throw new Error('Error al obtener las listas de seguidores/seguidos');
-        }
-
-        const followersData = await followersRes.json();
-        const followingData = await followingRes.json();
-
-        updateLoaderStatus('PROCESANDO...', 'Comparando listas...');
-
-        return {
-            username: cleanUsername,
-            followers: followersData.users,
-            following: followingData.users,
         };
-    } catch (error) {
-        console.error('Error fetching Instagram data:', error);
-        throw error;
-    }
+        reader.onerror = () => reject(new Error('Error al leer el archivo'));
+        reader.readAsText(file);
+    });
 }
 
 // ============================================
-// FUNCIONES DE COMPARACIÓN
+// FILE UPLOAD
+// ============================================
+function setupUploadZone(zone, fileInput, fileNameEl, onLoad) {
+    fileInput.addEventListener('change', () => {
+        if (fileInput.files.length > 0) {
+            const file = fileInput.files[0];
+            fileNameEl.textContent = file.name;
+            zone.classList.add('upload-zone-loaded');
+            onLoad(file);
+        }
+    });
+
+    zone.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        zone.classList.add('upload-zone-drag');
+    });
+
+    zone.addEventListener('dragleave', () => {
+        zone.classList.remove('upload-zone-drag');
+    });
+
+    zone.addEventListener('drop', (e) => {
+        e.preventDefault();
+        zone.classList.remove('upload-zone-drag');
+        if (e.dataTransfer.files.length > 0) {
+            const file = e.dataTransfer.files[0];
+            fileInput.files = e.dataTransfer.files;
+            fileNameEl.textContent = file.name;
+            zone.classList.add('upload-zone-loaded');
+            onLoad(file);
+        }
+    });
+}
+
+function updateCheckButton() {
+    elements.checkBtn.disabled = !(followersData && followingData);
+}
+
+// ============================================
+// COMPARACION
 // ============================================
 function compareUsers(followers, following) {
     const followersSet = new Set(followers);
@@ -167,17 +147,12 @@ function compareUsers(followers, following) {
     const onlyFollowing = [];
 
     followers.forEach(user => {
-        if (followingSet.has(user)) {
-            mutuals.push(user);
-        } else {
-            onlyFollowers.push(user);
-        }
+        if (followingSet.has(user)) mutuals.push(user);
+        else onlyFollowers.push(user);
     });
 
     following.forEach(user => {
-        if (!followersSet.has(user)) {
-            onlyFollowing.push(user);
-        }
+        if (!followersSet.has(user)) onlyFollowing.push(user);
     });
 
     return {
@@ -188,7 +163,7 @@ function compareUsers(followers, following) {
 }
 
 // ============================================
-// FUNCIONES DE RENDERIZADO
+// RENDERIZADO
 // ============================================
 function renderList(container, users) {
     container.innerHTML = '';
@@ -204,22 +179,19 @@ function renderList(container, users) {
     users.forEach(user => {
         const userDiv = document.createElement('div');
         userDiv.className = 'card-list-item';
-        userDiv.textContent = `@${user}`;
+        userDiv.textContent = '@' + user;
         container.appendChild(userDiv);
     });
 }
 
-function displayResults(data) {
-    const comparison = compareUsers(data.followers, data.following);
+function displayResults(followers, following) {
+    const comparison = compareUsers(followers, following);
 
     currentData = {
-        username: data.username,
-        followers: data.followers,
-        following: data.following,
+        followers,
+        following,
         ...comparison,
     };
-
-    elements.resultUsername.textContent = data.username;
 
     elements.mutualsCount.textContent = comparison.mutuals.length;
     elements.followersCount.textContent = comparison.onlyFollowers.length;
@@ -233,7 +205,7 @@ function displayResults(data) {
 }
 
 // ============================================
-// FUNCIONES DE EXPORTACIÓN
+// EXPORTACION
 // ============================================
 function exportJSON() {
     if (!currentData) return;
@@ -243,56 +215,165 @@ function exportJSON() {
     const url = URL.createObjectURL(blob);
     const a = document.createElement('a');
     a.href = url;
-    a.download = `${currentData.username}_instagram_data.json`;
+    a.download = 'instagram_comparacion.json';
     a.click();
     URL.revokeObjectURL(url);
 }
 
 // ============================================
-// MANEJADORES DE EVENTOS
+// HANDLERS
 // ============================================
 async function handleCheck() {
-    const username = elements.usernameInput.value.trim();
-
-    if (!username) {
-        elements.usernameInput.focus();
-        return;
-    }
-
-    elements.loadingUsername.textContent = `@${username.replace('@', '')}`;
     showScreen('loader');
-    startLoaderMessages();
+
+    // Small delay so loader renders
+    await new Promise(r => setTimeout(r, 300));
 
     try {
-        const data = await fetchInstagramData(username);
-        stopLoaderMessages();
-        displayResults(data);
+        const followers = extractUsernames(followersData);
+        const following = extractUsernames(followingData);
+
+        if (followers.length === 0 && following.length === 0) {
+            throw new Error('No se encontraron usuarios en los archivos. Verifica que sean los archivos correctos de Instagram.');
+        }
+
+        displayResults(followers, following);
     } catch (error) {
-        stopLoaderMessages();
         showScreen('input');
-        alert(error.message || 'Error al obtener los datos. Intenta de nuevo.');
+        alert(error.message);
     }
 }
 
 function handleReset() {
-    elements.usernameInput.value = '';
+    followersData = null;
+    followingData = null;
     currentData = null;
+
+    elements.followersFile.value = '';
+    elements.followingFile.value = '';
+    elements.followersFileName.textContent = 'followers_1.json';
+    elements.followingFileName.textContent = 'following.json';
+    elements.followersZone.classList.remove('upload-zone-loaded');
+    elements.followingZone.classList.remove('upload-zone-loaded');
+    elements.checkBtn.disabled = true;
+
     showScreen('input');
-    elements.usernameInput.focus();
+}
+
+// ============================================
+// NAME GENERATOR (underscore only)
+// ============================================
+const NAME_LIMIT = 30;
+
+function generatePoeticString(base) {
+    base = base.replace(/\s+/g, '_');
+    let name = base;
+
+    while (name.length < NAME_LIMIT) {
+        const spacesLeft = NAME_LIMIT - name.length;
+        const howMany = Math.floor(Math.random() * spacesLeft) + 1;
+        const fill = '_'.repeat(howMany);
+        const pos = Math.floor(Math.random() * (name.length + 1));
+        name = name.slice(0, pos) + fill + name.slice(pos);
+    }
+
+    return name.slice(0, NAME_LIMIT);
+}
+
+function generateUniqueNames(baseName, quantity) {
+    const uniqueSet = new Set();
+    const results = [];
+    let attempts = 0;
+    const maxAttempts = quantity * 100;
+
+    while (results.length < quantity && attempts < maxAttempts) {
+        const candidate = generatePoeticString(baseName);
+        if (!uniqueSet.has(candidate)) {
+            uniqueSet.add(candidate);
+            results.push(candidate);
+        }
+        attempts++;
+    }
+
+    return { list: results, exhausted: results.length < quantity, attempts };
+}
+
+function handleGenerate() {
+    const baseName = elements.baseName.value.trim();
+    if (!baseName) {
+        elements.baseName.focus();
+        return;
+    }
+
+    const quantity = parseInt(elements.numOptions.value, 10) || 5;
+    const { list, exhausted, attempts } = generateUniqueNames(baseName, quantity);
+
+    elements.generatorResults.innerHTML = '';
+
+    list.forEach(name => {
+        const item = document.createElement('div');
+        item.className = 'generator-item';
+
+        const text = document.createElement('span');
+        text.className = 'generator-text';
+        text.textContent = name;
+
+        const btn = document.createElement('button');
+        btn.className = 'btn btn-copy';
+        btn.textContent = 'COPIAR';
+        btn.addEventListener('click', () => {
+            navigator.clipboard.writeText(name).then(() => {
+                btn.textContent = 'COPIADO';
+                setTimeout(() => { btn.textContent = 'COPIAR'; }, 1500);
+            });
+        });
+
+        item.appendChild(text);
+        item.appendChild(btn);
+        elements.generatorResults.appendChild(item);
+    });
+
+    if (exhausted) {
+        elements.generatorStatus.textContent = list.length + ' de ' + quantity + ' generados (maximo alcanzado)';
+    } else {
+        elements.generatorStatus.textContent = list.length + ' nombres generados';
+    }
 }
 
 // ============================================
 // EVENT LISTENERS
 // ============================================
-elements.checkBtn.addEventListener('click', handleCheck);
-elements.usernameInput.addEventListener('keypress', (e) => {
-    if (e.key === 'Enter') handleCheck();
+setupUploadZone(elements.followersZone, elements.followersFile, elements.followersFileName, async (file) => {
+    try {
+        followersData = await readJSONFile(file);
+        updateCheckButton();
+    } catch (e) {
+        alert(e.message);
+        followersData = null;
+        updateCheckButton();
+    }
 });
+
+setupUploadZone(elements.followingZone, elements.followingFile, elements.followingFileName, async (file) => {
+    try {
+        followingData = await readJSONFile(file);
+        updateCheckButton();
+    } catch (e) {
+        alert(e.message);
+        followingData = null;
+        updateCheckButton();
+    }
+});
+
+elements.checkBtn.addEventListener('click', handleCheck);
 elements.exportBtn.addEventListener('click', exportJSON);
 elements.resetBtn.addEventListener('click', handleReset);
+elements.generateBtn.addEventListener('click', handleGenerate);
+elements.baseName.addEventListener('keypress', (e) => {
+    if (e.key === 'Enter') handleGenerate();
+});
 
 // ============================================
-// INICIALIZACIÓN
+// INIT
 // ============================================
 showScreen('input');
-elements.usernameInput.focus();

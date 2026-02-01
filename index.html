@@ -3,43 +3,68 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Instagram List Comparator | meowrhino.studio</title>
+    <title>Instagram List Comparator</title>
     <meta name="description" content="Compara listas de seguidores y seguidos de Instagram para identificar mutuos">
-    
-    <!-- Google Fonts -->
+
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&display=swap" rel="stylesheet">
-    
+
     <link rel="stylesheet" href="styles.css">
 </head>
 <body>
-    <!-- Header -->
     <header class="header">
         <div class="container">
             <h1 class="header-title">INSTAGRAM LIST COMPARATOR</h1>
         </div>
     </header>
 
-    <!-- Main Content -->
     <main class="main">
         <div class="container">
             <!-- Input Screen -->
             <div id="inputScreen" class="screen">
                 <div class="card card-input">
                     <div class="form-group">
-                        <label for="username" class="label">NOMBRE DE USUARIO DE INSTAGRAM</label>
-                        <input
-                            type="text"
-                            id="username"
-                            class="input"
-                            placeholder="@usuario"
-                            autocomplete="off"
-                        >
-                        <p class="help-text">Introduce el @ de cualquier perfil público</p>
+                        <label class="label">SUBE TUS ARCHIVOS DE INSTAGRAM</label>
+                        <p class="help-text">Selecciona los archivos JSON de tu descarga de datos</p>
                     </div>
-                    <button id="checkBtn" class="btn btn-primary">COMPROBAR</button>
+
+                    <div class="upload-zone" id="followersZone">
+                        <input type="file" id="followersFile" accept=".json" class="file-input">
+                        <label for="followersFile" class="upload-label">
+                            <span class="upload-icon">&uarr;</span>
+                            <span class="upload-title" id="followersFileName">followers_1.json</span>
+                            <span class="upload-hint">Arrastra o haz clic</span>
+                        </label>
+                    </div>
+
+                    <div class="upload-zone" id="followingZone">
+                        <input type="file" id="followingFile" accept=".json" class="file-input">
+                        <label for="followingFile" class="upload-label">
+                            <span class="upload-icon">&uarr;</span>
+                            <span class="upload-title" id="followingFileName">following.json</span>
+                            <span class="upload-hint">Arrastra o haz clic</span>
+                        </label>
+                    </div>
+
+                    <button id="checkBtn" class="btn btn-primary" disabled>COMPARAR</button>
                 </div>
+
+                <details class="instructions">
+                    <summary class="instructions-toggle">COMO DESCARGO MIS DATOS DE INSTAGRAM?</summary>
+                    <div class="instructions-content">
+                        <ol class="instructions-list">
+                            <li>Abre Instagram y ve a <strong>Configuracion</strong></li>
+                            <li>Ve a <strong>Centro de cuentas &rarr; Tu informacion y permisos</strong></li>
+                            <li>Pulsa <strong>Descargar tu informacion</strong></li>
+                            <li>Selecciona <strong>Parte de tu informacion</strong> y marca solo <strong>Seguidores y seguidos</strong></li>
+                            <li>Elige formato <strong>JSON</strong> y rango <strong>Todo el tiempo</strong></li>
+                            <li>Pulsa <strong>Crear archivos</strong> y espera el email</li>
+                            <li>Descarga el ZIP y extrae los archivos</li>
+                        </ol>
+                        <p class="instructions-note">Los archivos estaran en: <code>connections/followers_and_following/</code></p>
+                    </div>
+                </details>
             </div>
 
             <!-- Loader Screen -->
@@ -52,9 +77,8 @@
                         <div class="loader-block loader-block-4"></div>
                     </div>
                     <div class="loader-text">
-                        <p class="loader-title" id="loaderTitle">CONECTANDO...</p>
-                        <p class="loader-subtitle">Obteniendo datos de <span id="loadingUsername"></span></p>
-                        <p class="loader-status" id="loaderStatus"></p>
+                        <p class="loader-title">PROCESANDO...</p>
+                        <p class="loader-subtitle">Comparando listas</p>
                     </div>
                 </div>
             </div>
@@ -62,7 +86,7 @@
             <!-- Results Screen -->
             <div id="resultsScreen" class="screen hidden">
                 <div class="results-header">
-                    <h2 class="results-title">@<span id="resultUsername"></span></h2>
+                    <h2 class="results-title">RESULTADOS</h2>
                     <div class="results-actions">
                         <button id="exportBtn" class="btn btn-outline">
                             <svg class="icon" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
@@ -72,12 +96,11 @@
                             </svg>
                             EXPORTAR JSON
                         </button>
-                        <button id="resetBtn" class="btn btn-outline">NUEVA BÚSQUEDA</button>
+                        <button id="resetBtn" class="btn btn-outline">NUEVA BUSQUEDA</button>
                     </div>
                 </div>
 
                 <div class="results-grid">
-                    <!-- Mutuos -->
                     <div class="card card-result">
                         <div class="card-header">
                             <h3 class="card-title">MUTUOS</h3>
@@ -86,7 +109,6 @@
                         <div class="card-list" id="mutualsList"></div>
                     </div>
 
-                    <!-- Solo te siguen -->
                     <div class="card card-result">
                         <div class="card-header">
                             <h3 class="card-title">SOLO TE SIGUEN</h3>
@@ -95,10 +117,9 @@
                         <div class="card-list" id="followersList"></div>
                     </div>
 
-                    <!-- Solo sigues tú -->
                     <div class="card card-result">
                         <div class="card-header">
-                            <h3 class="card-title">SOLO SIGUES TÚ</h3>
+                            <h3 class="card-title">SOLO SIGUES TU</h3>
                             <span class="card-count card-count-orange" id="followingCount">0</span>
                         </div>
                         <div class="card-list" id="followingList"></div>
@@ -106,9 +127,28 @@
                 </div>
             </div>
         </div>
+
+        <!-- Name Generator Section -->
+        <div class="container">
+            <div class="separator"></div>
+            <div class="card card-generator">
+                <div class="form-group">
+                    <label class="label">QUIERES UN MEJOR NOMBRE DE INSTAGRAM?</label>
+                    <p class="help-text">Genera nombres unicos con underscores a partir de tu nombre</p>
+                </div>
+
+                <div class="generator-row">
+                    <input type="text" id="baseName" class="input" placeholder="tu nombre" autocomplete="off">
+                    <input type="number" id="numOptions" class="input input-small" min="1" max="50" value="5">
+                    <button id="generateBtn" class="btn btn-primary">GENERAR</button>
+                </div>
+
+                <div id="generatorResults" class="generator-results"></div>
+                <p id="generatorStatus" class="generator-status"></p>
+            </div>
+        </div>
     </main>
 
-    <!-- Footer -->
     <footer class="footer">
         <a href="https://meowrhino.studio" target="_blank" rel="noopener noreferrer" class="footer-link">
             meowrhino.studio
