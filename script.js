@@ -181,10 +181,13 @@ function renderList(container, users) {
     }
 
     users.forEach(user => {
-        const userDiv = document.createElement('div');
-        userDiv.className = 'card-list-item';
-        userDiv.textContent = '@' + user;
-        container.appendChild(userDiv);
+        const link = document.createElement('a');
+        link.className = 'card-list-item';
+        link.href = 'https://www.instagram.com/' + encodeURIComponent(user);
+        link.target = '_blank';
+        link.rel = 'noopener noreferrer';
+        link.textContent = '@' + user;
+        container.appendChild(link);
     });
 }
 
