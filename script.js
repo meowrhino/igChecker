@@ -72,8 +72,12 @@ function extractUsernames(jsonData) {
 
     return entries
         .map(entry => {
-            if (entry.string_list_data && entry.string_list_data.length > 0) {
-                return entry.string_list_data[0].value;
+            const item = entry.string_list_data && entry.string_list_data[0];
+            if (item && item.value) return item.value;
+            if (entry.title) return entry.title;
+            if (item && item.href) {
+                const match = item.href.match(/instagram\.com\/(?:_u\/)?([^/?#]+)/);
+                if (match) return match[1];
             }
             return null;
         })
